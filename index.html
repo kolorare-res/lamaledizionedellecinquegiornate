@@ -40,21 +40,18 @@
     body { margin: 0; overflow: hidden; }
     .a-enter-vr-button { display: none !important; }
 
-    /* Stile del bottone Credits UI Overlay */
-    .credits-btn {
+    /* Stile del bottone Cuore UI Overlay */
+    .heart-btn {
       position: absolute;
       bottom: 16px;
       right: 16px;
       z-index: 9999;
       background: rgba(11, 19, 26, 0.75);
-      color: #ffffff;
+      color: #e63946;
       text-decoration: none;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 0.5px;
-      padding: 8px 14px;
-      border-radius: 20px;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
       border: 1px solid rgba(255, 255, 255, 0.2);
       backdrop-filter: blur(6px);
       -webkit-backdrop-filter: blur(6px);
@@ -62,24 +59,33 @@
       transition: all 0.3s ease;
       display: flex;
       align-items: center;
-      gap: 6px;
+      justify-content: center;
     }
 
-    .credits-btn:hover, .credits-btn:active {
+    .heart-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+      transition: transform 0.2s ease;
+    }
+
+    .heart-btn:hover, .heart-btn:active {
       background: rgba(11, 19, 26, 0.95);
       border-color: rgba(255, 255, 255, 0.5);
-      transform: translateY(-2px);
+      transform: scale(1.1);
+    }
+
+    .heart-btn:hover svg, .heart-btn:active svg {
+      transform: scale(1.15);
     }
   </style>
 </head>
 <body>
 
-  <!-- Pulsante Credits -->
-  <a href="https://kolorare.it/" target="_blank" rel="noopener noreferrer" class="credits-btn">
-    <span>Credits</span>
-    <svg width="10" height="10" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M3.5 2.5H9.5V8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M9.5 2.5L2.5 9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Pulsante Cuore (Link a Kolorare) -->
+  <a href="https://kolorare.it/" target="_blank" rel="noopener noreferrer" class="heart-btn" aria-label="Credits">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
     </svg>
   </a>
 
