@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>La Maledizione delle Cinque Giornate - AR</title>
+
+  <!-- Librerie A-Frame e MindAR -->
+  <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+
+  <!-- Componente LERP per inseguimento rapido + stabilità -->
+  <script>
+    AFRAME.registerComponent('smooth-tracker', {
+      schema: {
+        factor: { type: 'number', default: 0.35 }
+      },
+      init: function () {
+        this.hasTarget = false;
+        this.el.addEventListener('targetFound', () => { this.hasTarget = true; });
+        this.el.addEventListener('targetLost', () => { this.hasTarget = false; });
+      },
+      tick: function () {
+        if (!this.hasTarget) return;
+
+        const object3D = this.el.object3D;
+        
+        if (this.prevPos) {
+          object3D.position.lerp(this.prevPos, 1 - this.data.factor);
+          object3D.quaternion.slerp(this.prevQuat, 1 - this.data.factor);
+        }
+
+        this.prevPos = object3D.position.clone();
+        this.prevQuat = object3D.quaternion.clone();
+      }
+    });
+  </script>
+
+  <style>
+    body { margin: 0; overflow: hidden; }
+    .a-enter-vr-button { display: none !important; }
+  </style>
+</head>
+<body>
+
+  <a-scene 
+    mindar-image="imageTargetSrc: ./targets.mind; filterMinCF: 0.001; filterBeta: 0.01; missTolerance: 5;" 
+    color-space="sRGB" 
+    renderer="colorManagement: true, physicallyCorrectLights; antialias: true;" 
+    vr-mode-ui="enabled: false" 
+    device-orientation-permission-ui="enabled: false">
+
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+    <a-entity id="ar-target" mindar-image-target="targetIndex: 0" smooth-tracker="factor: 0.35">
+    </a-entity>
+
+  </a-scene>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const targetEntity = document.querySelector("#ar-target");
+
+      // ==========================================
+      // DIMENSIONI E GEOMETRIA (Target 886x1240 px @ 150dpi)
+      // ==========================================
+      const planeWidth = "0.7145"; // Ratio 886/1240
+      const planeHeight = "1";     // Base Y = 1.0
+
+      const maxDepth = 0.3125; // Profondità scalata sulle nuove proporzioni
+
+      // ==========================================
+      // TEXTURE STRUTTURA SCATOLA
+      // ==========================================
+      const boxTextures = {
+        back: "./images/box_back.png",
+        bottom: "./images/box_bottom.png"
+      };
+
+      // ==========================================
+      // 1. SCATOLA 3D (BACK + BOTTOM)
+      // ==========================================
+      const boxGroup = document.createElement("a-entity");
+      boxGroup.setAttribute("id", "diorama-box");
+
+      const createWall = (width, height, position, rotation, texturePath) => {
+        const wall = document.createElement("a-plane");
+        wall.setAttribute("width", width);
+        wall.setAttribute("height", height);
+        wall.setAttribute("position", position);
+        wall.setAttribute("rotation", rotation);
+        
+        if (texturePath) {
+          wall.setAttribute("src", texturePath);
+          wall.setAttribute("material", "transparent: true; alphaTest: 0.5; side: double; depthTest: true;");
+        } else {
+          wall.setAttribute("material", "color: #0b131a; roughness: 0.9; side: double; depthTest: true;");
+        }
+        return wall;
+      };
+
+      boxGroup.appendChild(createWall(planeWidth, planeHeight, "0 0 0", "0 0 0", boxTextures.back));
+
+      const overlapZ = -0.007; 
+      const bottomLengthExact = maxDepth - overlapZ; 
+      const bottomCenterZExact = overlapZ + (bottomLengthExact / 2); 
+
+      boxGroup.appendChild(createWall(
+        planeWidth, 
+        bottomLengthExact, 
+        `0 -0.5 ${bottomCenterZExact.toFixed(4)}`, 
+        "-90 0 0", 
+        boxTextures.bottom
+      ));
+
+      targetEntity.appendChild(boxGroup);
+
+      // ==========================================
+      // 2. I 3 LAYER Z (POSIZIONI RISCALATE)
+      // ==========================================
+      const layerPositionsZ = [
+        0.1214,  // Layer 01 (corrispondente a 0.1700 originale)
+        0.1741,  // Layer 02 (corrispondente a 0.2437 originale)
+        0.3125   // Layer 03 (Duomo, al bordo della scatola)
+      ];
+
+      for (let i = 1; i <= 3; i++) {
+        const layerNumber = String(i).padStart(2, '0');
+        const plane = document.createElement("a-plane");
+        
+        plane.setAttribute("src", `./images/layer${layerNumber}.png`);
+        plane.setAttribute("width", planeWidth);
+        plane.setAttribute("height", planeHeight);
+        
+        const posZ = layerPositionsZ[i - 1];
+        plane.setAttribute("position", `0 0 ${posZ.toFixed(4)}`);
+        plane.setAttribute("scale", "1 1 1");
+        
+        plane.setAttribute("material", `
+          transparent: true; 
+          alphaTest: 0.5; 
+          side: front;
+          depthTest: true;
+        `);
+        
+        plane.setAttribute("render-order", 10 + i);
+        targetEntity.appendChild(plane);
+      }
+
+      // ==========================================
+      // 3. NEBBIA ANIMATA INTERNA + ESTERNA
+      // ==========================================
+      const fogContainer = document.createElement("a-entity");
+      fogContainer.setAttribute("id", "fog-system");
+
+      const fogLayersConfig = [
+        // Nebbie dentro la scatola
+        { texture: "./images/fog_cloud1.png", z: 0.085, y: -0.35, xStart: -0.10, xEnd: 0.10, dur: 3500, scale: `${planeWidth} 0.40 1`, opacity: 0.65 },
+        { texture: "./images/fog_cloud2.png", z: 0.157, y: -0.32, xStart: 0.12, xEnd: -0.08, dur: 4500, scale: "0.8 0.45 1", opacity: 0.55 },
+        { texture: "./images/fog_cloud3.png", z: 0.257, y: -0.28, xStart: -0.05, xEnd: 0.12, dur: 3000, scale: "0.9 0.50 1", opacity: 0.45 },
+        
+        // NEBBIA ESTERNA: Z = 0.3714 (Oltre la fine della scatola/layer03 che sta a 0.3125)
+        { texture: "./images/fog_cloud1.png", z: 0.3714, y: -0.30, xStart: -0.12, xEnd: 0.12, dur: 4200, scale: "0.9 0.55 1", opacity: 0.60 }
+      ];
+
+      fogLayersConfig.forEach((cfg, idx) => {
+        const fogPlane = document.createElement("a-plane");
+        
+        fogPlane.setAttribute("src", cfg.texture);
+        fogPlane.setAttribute("width", "1");
+        fogPlane.setAttribute("height", "1");
+        fogPlane.setAttribute("position", `${cfg.xStart} ${cfg.y} ${cfg.z.toFixed(4)}`);
+        fogPlane.setAttribute("scale", cfg.scale);
+        
+        fogPlane.setAttribute("material", `
+          transparent: true;
+          opacity: ${cfg.opacity};
+          side: double;
+          depthTest: true;
+          blending: additive;
+        `);
+        
+        fogPlane.setAttribute("render-order", 50 + idx);
+
+        fogPlane.setAttribute("animation__drift", `
+          property: position;
+          to: ${cfg.xEnd} ${cfg.y} ${cfg.z.toFixed(4)};
+          dir: alternate;
+          loop: true;
+          dur: ${cfg.dur};
+          easing: easeInOutSine;
+        `);
+
+        fogPlane.setAttribute("animation__fade", `
+          property: material.opacity;
+          from: ${cfg.opacity * 0.35};
+          to: ${cfg.opacity};
+          dir: alternate;
+          loop: true;
+          dur: ${Math.round(cfg.dur * 0.7)};
+          easing: easeInOutQuad;
+        `);
+
+        fogContainer.appendChild(fogPlane);
+      });
+
+      targetEntity.appendChild(fogContainer);
+    });
+  </script>
+  
+</body>
+</html>
