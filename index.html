@@ -108,13 +108,13 @@
       const targetEntity = document.querySelector("#ar-target");
 
       // ==========================================
-      // GEOMETRIA ESATTA (Basata su 1063x1500 px -> Ratio 0.7087)
+      // GEOMETRIA CORRETTA (Per MindAR: Larghezza = 1.0, Altezza = 1500/1063 = 1.4111)
       // ==========================================
-      const planeWidth = "0.7087"; // Larghezza reale relativa all'altezza 1.0
-      const planeHeight = "1";     // Altezza base unitaria
+      const planeWidth = "1.0";    // Larghezza base unitaria di MindAR
+      const planeHeight = "1.4111"; // Altezza proporzionata a 15x21 cm / 1063x1500 px
 
-      // Profondità del diorama calibrata sui 15x21 cm (3.5 cm = 0.1667)
-      const maxDepth = 0.1667; 
+      // Profondità del diorama calibrata sui 15x21 cm
+      const maxDepth = 0.235; 
 
       // ==========================================
       // TEXTURE STRUTTURA SCATOLA
@@ -149,15 +149,16 @@
       // Fondo a Z = 0
       boxGroup.appendChild(createWall(planeWidth, planeHeight, "0 0 0", "0 0 0", boxTextures.back));
 
-      // Pavimento incastrato con sovrapposizione a Z = -0.005 e Y = -0.5
+      // Pavimento posizionato a Y = -0.7055 (metà esatta di 1.4111)
       const overlapZ = -0.005; 
       const bottomLengthExact = maxDepth - overlapZ; 
       const bottomCenterZExact = overlapZ + (bottomLengthExact / 2); 
+      const halfHeight = (parseFloat(planeHeight) / 2).toFixed(4);
 
       boxGroup.appendChild(createWall(
         planeWidth, 
         bottomLengthExact, 
-        `0 -0.5 ${bottomCenterZExact.toFixed(4)}`, 
+        `0 -${halfHeight} ${bottomCenterZExact.toFixed(4)}`, 
         "-90 0 0", 
         boxTextures.bottom
       ));
@@ -165,12 +166,12 @@
       targetEntity.appendChild(boxGroup);
 
       // ==========================================
-      // 2. I 3 LAYER Z (SCALATI SU 0.7087)
+      // 2. I 3 LAYER Z
       // ==========================================
       const layerPositionsZ = [
-        0.0648,  // Layer 01
-        0.0928,  // Layer 02
-        0.1667   // Layer 03 (Duomo, bordo esterno della scatola)
+        0.091,  // Layer 01
+        0.131,  // Layer 02
+        0.235   // Layer 03 (Duomo, bordo esterno della scatola)
       ];
 
       for (let i = 1; i <= 3; i++) {
@@ -197,19 +198,19 @@
       }
 
       // ==========================================
-      // 3. NEBBIA ANIMATA INTERNA + ESTERNA (INVARIATA)
+      // 3. NEBBIA ANIMATA INTERNA + ESTERNA
       // ==========================================
       const fogContainer = document.createElement("a-entity");
       fogContainer.setAttribute("id", "fog-system");
 
       const fogLayersConfig = [
         // Nebbie interne
-        { texture: "./images/fog_cloud1.png", z: 0.045, y: -0.35, xStart: -0.10, xEnd: 0.10, dur: 3500, scale: `${planeWidth} 0.40 1`, opacity: 0.65 },
-        { texture: "./images/fog_cloud2.png", z: 0.084, y: -0.32, xStart: 0.12, xEnd: -0.08, dur: 4500, scale: "0.8 0.45 1", opacity: 0.55 },
-        { texture: "./images/fog_cloud3.png", z: 0.137, y: -0.28, xStart: -0.05, xEnd: 0.12, dur: 3000, scale: "0.9 0.50 1", opacity: 0.45 },
+        { texture: "./images/fog_cloud1.png", z: 0.063, y: -0.49, xStart: -0.14, xEnd: 0.14, dur: 3500, scale: `${planeWidth} 0.56 1`, opacity: 0.65 },
+        { texture: "./images/fog_cloud2.png", z: 0.118, y: -0.45, xStart: 0.17, xEnd: -0.11, dur: 4500, scale: "1.13 0.63 1", opacity: 0.55 },
+        { texture: "./images/fog_cloud3.png", z: 0.193, y: -0.39, xStart: -0.07, xEnd: 0.17, dur: 3000, scale: "1.27 0.70 1", opacity: 0.45 },
         
-        // NEBBIA ESTERNA: Z = 0.1981
-        { texture: "./images/fog_cloud1.png", z: 0.1981, y: -0.30, xStart: -0.12, xEnd: 0.12, dur: 4200, scale: "0.9 0.55 1", opacity: 0.60 }
+        // Nebbia esterna
+        { texture: "./images/fog_cloud1.png", z: 0.279, y: -0.42, xStart: -0.17, xEnd: 0.17, dur: 4200, scale: "1.27 0.77 1", opacity: 0.60 }
       ];
 
       fogLayersConfig.forEach((cfg, idx) => {
