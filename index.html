@@ -9,33 +9,6 @@
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
 
-  <!-- Componente LERP per inseguimento rapido + stabilità -->
-  <script>
-    AFRAME.registerComponent('smooth-tracker', {
-      schema: {
-        factor: { type: 'number', default: 0.35 }
-      },
-      init: function () {
-        this.hasTarget = false;
-        this.el.addEventListener('targetFound', () => { this.hasTarget = true; });
-        this.el.addEventListener('targetLost', () => { this.hasTarget = false; });
-      },
-      tick: function () {
-        if (!this.hasTarget) return;
-
-        const object3D = this.el.object3D;
-        
-        if (this.prevPos) {
-          object3D.position.lerp(this.prevPos, 1 - this.data.factor);
-          object3D.quaternion.slerp(this.prevQuat, 1 - this.data.factor);
-        }
-
-        this.prevPos = object3D.position.clone();
-        this.prevQuat = object3D.quaternion.clone();
-      }
-    });
-  </script>
-
   <style>
     body { margin: 0; overflow: hidden; }
     .a-enter-vr-button { display: none !important; }
@@ -74,10 +47,6 @@
       border-color: rgba(255, 255, 255, 0.5);
       transform: scale(1.1);
     }
-
-    .heart-btn:hover svg, .heart-btn:active svg {
-      transform: scale(1.15);
-    }
   </style>
 </head>
 <body>
@@ -89,8 +58,9 @@
     </svg>
   </a>
 
+  <!-- SCENA AR -->
   <a-scene 
-    mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.001; filterBeta: 0.01; missTolerance: 5;" 
+    mindar-image="imageTargetSrc: targets.mind; filterMinCF: 0.0001; filterBeta: 0.001; missTolerance: 10;" 
     color-space="sRGB" 
     renderer="colorManagement: true, physicallyCorrectLights; antialias: true;" 
     vr-mode-ui="enabled: false" 
@@ -98,34 +68,34 @@
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <a-entity id="ar-target" mindar-image-target="targetIndex: 0" smooth-tracker="factor: 0.35">
+    <!-- ANCORA TARGET DI MINDAR -->
+    <a-entity id="ar-target" mindar-image-target="targetIndex: 0">
+      <!-- CONTENITORE PADRE PER IL DIORAMA -->
+      <a-entity id="diorama-container"></a-entity>
     </a-entity>
 
   </a-scene>
 
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      const targetEntity = document.querySelector("#ar-target");
+    window.addEventListener("DOMContentLoaded", () => {
+      const dioramaContainer = document.querySelector("#diorama-container");
 
       // ==========================================
-      // GEOMETRIA CORRETTA (Per MindAR: Larghezza = 1.0, Altezza = 1500/1063 = 1.4111)
+      // GEOMETRIA CORRETTA (Rapporto esatto 15x21 cm -> 21 / 15 = 1.4000)
       // ==========================================
-      const planeWidth = "1.0";    // Larghezza base unitaria di MindAR
-      const planeHeight = "1.4111"; // Altezza proporzionata a 15x21 cm / 1063x1500 px
+      const planeWidth = "1.0";    
+      const planeHeight = "1.4000"; 
 
-      // Profondità del diorama calibrata sui 15x21 cm
-      const maxDepth = 0.235; 
+      // Profondità della scatola scalata esattamente in proporzione ai 15x21 cm
+      const maxDepth = 0.2333; 
 
-      // ==========================================
-      // TEXTURE STRUTTURA SCATOLA
-      // ==========================================
       const boxTextures = {
         back: "./images/box_back.png",
         bottom: "./images/box_bottom.png"
       };
 
       // ==========================================
-      // 1. SCATOLA 3D (BACK + BOTTOM PERFETTAMENTE SIGILLATO)
+      // 1. SCATOLA 3D (BACK + BOTTOM)
       // ==========================================
       const boxGroup = document.createElement("a-entity");
       boxGroup.setAttribute("id", "diorama-box");
@@ -149,11 +119,11 @@
       // Fondo a Z = 0
       boxGroup.appendChild(createWall(planeWidth, planeHeight, "0 0 0", "0 0 0", boxTextures.back));
 
-      // Pavimento posizionato a Y = -0.7055 (metà esatta di 1.4111)
+      // Pavimento calcolato sull'altezza di 1.4000 (Y = -0.7000)
       const overlapZ = -0.005; 
       const bottomLengthExact = maxDepth - overlapZ; 
       const bottomCenterZExact = overlapZ + (bottomLengthExact / 2); 
-      const halfHeight = (parseFloat(planeHeight) / 2).toFixed(4);
+      const halfHeight = (parseFloat(planeHeight) / 2).toFixed(4); // -0.7000
 
       boxGroup.appendChild(createWall(
         planeWidth, 
@@ -163,15 +133,15 @@
         boxTextures.bottom
       ));
 
-      targetEntity.appendChild(boxGroup);
+      dioramaContainer.appendChild(boxGroup);
 
       // ==========================================
       // 2. I 3 LAYER Z
       // ==========================================
       const layerPositionsZ = [
-        0.091,  // Layer 01
-        0.131,  // Layer 02
-        0.235   // Layer 03 (Duomo, bordo esterno della scatola)
+        0.090,  // Layer 01
+        0.130,  // Layer 02
+        0.2333  // Layer 03 (Duomo / Bordo esterno)
       ];
 
       for (let i = 1; i <= 3; i++) {
@@ -184,7 +154,6 @@
         
         const posZ = layerPositionsZ[i - 1];
         plane.setAttribute("position", `0 0 ${posZ.toFixed(4)}`);
-        plane.setAttribute("scale", "1 1 1");
         
         plane.setAttribute("material", `
           transparent: true; 
@@ -193,8 +162,7 @@
           depthTest: true;
         `);
         
-        plane.setAttribute("render-order", 10 + i);
-        targetEntity.appendChild(plane);
+        dioramaContainer.appendChild(plane);
       }
 
       // ==========================================
@@ -204,16 +172,13 @@
       fogContainer.setAttribute("id", "fog-system");
 
       const fogLayersConfig = [
-        // Nebbie interne
-        { texture: "./images/fog_cloud1.png", z: 0.063, y: -0.49, xStart: -0.14, xEnd: 0.14, dur: 3500, scale: `${planeWidth} 0.56 1`, opacity: 0.65 },
-        { texture: "./images/fog_cloud2.png", z: 0.118, y: -0.45, xStart: 0.17, xEnd: -0.11, dur: 4500, scale: "1.13 0.63 1", opacity: 0.55 },
-        { texture: "./images/fog_cloud3.png", z: 0.193, y: -0.39, xStart: -0.07, xEnd: 0.17, dur: 3000, scale: "1.27 0.70 1", opacity: 0.45 },
-        
-        // Nebbia esterna
-        { texture: "./images/fog_cloud1.png", z: 0.279, y: -0.42, xStart: -0.17, xEnd: 0.17, dur: 4200, scale: "1.27 0.77 1", opacity: 0.60 }
+        { texture: "./images/fog_cloud1.png", z: 0.063, y: -0.48, xStart: -0.14, xEnd: 0.14, dur: 3500, scale: `${planeWidth} 0.56 1`, opacity: 0.65 },
+        { texture: "./images/fog_cloud2.png", z: 0.118, y: -0.44, xStart: 0.17, xEnd: -0.11, dur: 4500, scale: "1.13 0.63 1", opacity: 0.55 },
+        { texture: "./images/fog_cloud3.png", z: 0.193, y: -0.38, xStart: -0.07, xEnd: 0.17, dur: 3000, scale: "1.27 0.70 1", opacity: 0.45 },
+        { texture: "./images/fog_cloud1.png", z: 0.279, y: -0.41, xStart: -0.17, xEnd: 0.17, dur: 4200, scale: "1.27 0.77 1", opacity: 0.60 }
       ];
 
-      fogLayersConfig.forEach((cfg, idx) => {
+      fogLayersConfig.forEach((cfg) => {
         const fogPlane = document.createElement("a-plane");
         
         fogPlane.setAttribute("src", cfg.texture);
@@ -229,8 +194,6 @@
           depthTest: true;
           blending: additive;
         `);
-        
-        fogPlane.setAttribute("render-order", 50 + idx);
 
         fogPlane.setAttribute("animation__drift", `
           property: position;
@@ -241,22 +204,11 @@
           easing: easeInOutSine;
         `);
 
-        fogPlane.setAttribute("animation__fade", `
-          property: material.opacity;
-          from: ${cfg.opacity * 0.35};
-          to: ${cfg.opacity};
-          dir: alternate;
-          loop: true;
-          dur: ${Math.round(cfg.dur * 0.7)};
-          easing: easeInOutQuad;
-        `);
-
         fogContainer.appendChild(fogPlane);
       });
 
-      targetEntity.appendChild(fogContainer);
+      dioramaContainer.appendChild(fogContainer);
     });
   </script>
-  
 </body>
 </html>
