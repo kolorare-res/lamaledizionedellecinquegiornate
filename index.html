@@ -108,12 +108,13 @@
       const targetEntity = document.querySelector("#ar-target");
 
       // ==========================================
-      // DIMENSIONI E GEOMETRIA (Target 886x1240 px @ 150dpi)
+      // DIMENSIONI E GEOMETRIA (15x21 cm - Aspect Ratio 0.7143)
       // ==========================================
-      const planeWidth = "0.7145"; // Ratio 886/1240
-      const planeHeight = "1";     // Base Y = 1.0
+      const planeWidth = "0.7143"; // 15cm / 21cm
+      const planeHeight = "1";     // Base Y = 1.0 (21cm)
 
-      const maxDepth = 0.3125; // Profondità scalata sulle nuove proporzioni
+      // Profondità pavimento: 3.5cm su 21cm = 0.1667
+      const maxDepth = 0.1667; 
 
       // ==========================================
       // TEXTURE STRUTTURA SCATOLA
@@ -124,7 +125,7 @@
       };
 
       // ==========================================
-      // 1. SCATOLA 3D (BACK + BOTTOM)
+      // 1. SCATOLA 3D (BACK + BOTTOM PERFETTAMENTE SIGILLATO)
       // ==========================================
       const boxGroup = document.createElement("a-entity");
       boxGroup.setAttribute("id", "diorama-box");
@@ -145,9 +146,11 @@
         return wall;
       };
 
+      // Fondo a Z = 0
       boxGroup.appendChild(createWall(planeWidth, planeHeight, "0 0 0", "0 0 0", boxTextures.back));
 
-      const overlapZ = -0.007; 
+      // Pavimento incastrato con sovrapposizione a Z = -0.005 e Y = -0.5
+      const overlapZ = -0.005; 
       const bottomLengthExact = maxDepth - overlapZ; 
       const bottomCenterZExact = overlapZ + (bottomLengthExact / 2); 
 
@@ -162,12 +165,12 @@
       targetEntity.appendChild(boxGroup);
 
       // ==========================================
-      // 2. I 3 LAYER Z (POSIZIONI RISCALATE)
+      // 2. I 3 LAYER Z (SCALATI PER 15x21 cm)
       // ==========================================
       const layerPositionsZ = [
-        0.1214,  // Layer 01
-        0.1741,  // Layer 02
-        0.3125   // Layer 03 (Duomo, al bordo della scatola)
+        0.0648,  // Layer 01 (corrisponde a 1.36cm di profondità reale)
+        0.0928,  // Layer 02 (corrisponde a 1.95cm di profondità reale)
+        0.1667   // Layer 03 (Duomo, bordo esterno della scatola a 3.5cm)
       ];
 
       for (let i = 1; i <= 3; i++) {
@@ -200,13 +203,13 @@
       fogContainer.setAttribute("id", "fog-system");
 
       const fogLayersConfig = [
-        // Nebbie dentro la scatola
-        { texture: "./images/fog_cloud1.png", z: 0.085, y: -0.35, xStart: -0.10, xEnd: 0.10, dur: 3500, scale: `${planeWidth} 0.40 1`, opacity: 0.65 },
-        { texture: "./images/fog_cloud2.png", z: 0.157, y: -0.32, xStart: 0.12, xEnd: -0.08, dur: 4500, scale: "0.8 0.45 1", opacity: 0.55 },
-        { texture: "./images/fog_cloud3.png", z: 0.257, y: -0.28, xStart: -0.05, xEnd: 0.12, dur: 3000, scale: "0.9 0.50 1", opacity: 0.45 },
+        // Nebbie interne
+        { texture: "./images/fog_cloud1.png", z: 0.045, y: -0.35, xStart: -0.10, xEnd: 0.10, dur: 3500, scale: `${planeWidth} 0.40 1`, opacity: 0.65 },
+        { texture: "./images/fog_cloud2.png", z: 0.084, y: -0.32, xStart: 0.12, xEnd: -0.08, dur: 4500, scale: "0.8 0.45 1", opacity: 0.55 },
+        { texture: "./images/fog_cloud3.png", z: 0.137, y: -0.28, xStart: -0.05, xEnd: 0.12, dur: 3000, scale: "0.9 0.50 1", opacity: 0.45 },
         
-        // NEBBIA ESTERNA: Z = 0.3714
-        { texture: "./images/fog_cloud1.png", z: 0.3714, y: -0.30, xStart: -0.12, xEnd: 0.12, dur: 4200, scale: "0.9 0.55 1", opacity: 0.60 }
+        // NEBBIA ESTERNA: Z = 0.1981 (Oltre la scatola/Duomo che si trova a 0.1667)
+        { texture: "./images/fog_cloud1.png", z: 0.1981, y: -0.30, xStart: -0.12, xEnd: 0.12, dur: 4200, scale: "0.9 0.55 1", opacity: 0.60 }
       ];
 
       fogLayersConfig.forEach((cfg, idx) => {
