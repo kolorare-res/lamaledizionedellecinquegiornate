@@ -108,12 +108,12 @@
       const targetEntity = document.querySelector("#ar-target");
 
       // ==========================================
-      // DIMENSIONI E GEOMETRIA (15x21 cm - Aspect Ratio 0.7143)
+      // GEOMETRIA ESATTA (Basata su 1063x1500 px -> Ratio 0.7087)
       // ==========================================
-      const planeWidth = "0.7143"; // 15cm / 21cm
-      const planeHeight = "1";     // Base Y = 1.0 (21cm)
+      const planeWidth = "0.7087"; // Larghezza reale relativa all'altezza 1.0
+      const planeHeight = "1";     // Altezza base unitaria
 
-      // Profondità pavimento: 3.5cm su 21cm = 0.1667
+      // Profondità del diorama calibrata sui 15x21 cm (3.5 cm = 0.1667)
       const maxDepth = 0.1667; 
 
       // ==========================================
@@ -165,12 +165,12 @@
       targetEntity.appendChild(boxGroup);
 
       // ==========================================
-      // 2. I 3 LAYER Z (SCALATI PER 15x21 cm)
+      // 2. I 3 LAYER Z (SCALATI SU 0.7087)
       // ==========================================
       const layerPositionsZ = [
-        0.0648,  // Layer 01 (corrisponde a 1.36cm di profondità reale)
-        0.0928,  // Layer 02 (corrisponde a 1.95cm di profondità reale)
-        0.1667   // Layer 03 (Duomo, bordo esterno della scatola a 3.5cm)
+        0.0648,  // Layer 01
+        0.0928,  // Layer 02
+        0.1667   // Layer 03 (Duomo, bordo esterno della scatola)
       ];
 
       for (let i = 1; i <= 3; i++) {
@@ -197,7 +197,7 @@
       }
 
       // ==========================================
-      // 3. NEBBIA ANIMATA INTERNA + ESTERNA
+      // 3. NEBBIA ANIMATA INTERNA + ESTERNA (INVARIATA)
       // ==========================================
       const fogContainer = document.createElement("a-entity");
       fogContainer.setAttribute("id", "fog-system");
@@ -208,7 +208,7 @@
         { texture: "./images/fog_cloud2.png", z: 0.084, y: -0.32, xStart: 0.12, xEnd: -0.08, dur: 4500, scale: "0.8 0.45 1", opacity: 0.55 },
         { texture: "./images/fog_cloud3.png", z: 0.137, y: -0.28, xStart: -0.05, xEnd: 0.12, dur: 3000, scale: "0.9 0.50 1", opacity: 0.45 },
         
-        // NEBBIA ESTERNA: Z = 0.1981 (Oltre la scatola/Duomo che si trova a 0.1667)
+        // NEBBIA ESTERNA: Z = 0.1981
         { texture: "./images/fog_cloud1.png", z: 0.1981, y: -0.30, xStart: -0.12, xEnd: 0.12, dur: 4200, scale: "0.9 0.55 1", opacity: 0.60 }
       ];
 
