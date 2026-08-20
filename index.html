@@ -9,22 +9,28 @@
   <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
 
+  <!-- File di Configurazione -->
+  <script src="./config.js"></script>
+
   <style>
     body { margin: 0; overflow: hidden; }
     .a-enter-vr-button { display: none !important; }
 
-    /* Stile del bottone Cuore UI Overlay */
-    .heart-btn {
+    /* Stile del badge Testuale "AR by kolorare" */
+    .kolorare-btn {
       position: absolute;
       bottom: 16px;
       right: 16px;
       z-index: 9999;
-      background: rgba(11, 19, 26, 0.75);
-      color: #e63946;
+      background: rgba(11, 19, 26, 0.85);
+      color: #ffffff;
       text-decoration: none;
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      padding: 8px 14px;
+      border-radius: 20px;
       border: 1px solid rgba(255, 255, 255, 0.2);
       backdrop-filter: blur(6px);
       -webkit-backdrop-filter: blur(6px);
@@ -35,27 +41,23 @@
       justify-content: center;
     }
 
-    .heart-btn svg {
-      width: 18px;
-      height: 18px;
-      fill: currentColor;
-      transition: transform 0.2s ease;
+    .kolorare-btn span {
+      color: #e63946;
+      margin-left: 3px;
     }
 
-    .heart-btn:hover, .heart-btn:active {
+    .kolorare-btn:hover, .kolorare-btn:active {
       background: rgba(11, 19, 26, 0.95);
       border-color: rgba(255, 255, 255, 0.5);
-      transform: scale(1.1);
+      transform: scale(1.05);
     }
   </style>
 </head>
 <body>
 
-  <!-- Pulsante Cuore (Link a Kolorare) -->
-  <a href="https://kolorare.it/" target="_blank" rel="noopener noreferrer" class="heart-btn" aria-label="Credits">
-    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
-    </svg>
+  <!-- Pulsante "AR by kolorare" -->
+  <a href="https://kolorare.it/" target="_blank" rel="noopener noreferrer" class="kolorare-btn" aria-label="Credits">
+    AR by <span>kolorare</span>
   </a>
 
   <!-- SCENA AR -->
@@ -70,7 +72,6 @@
 
     <!-- ANCORA TARGET DI MINDAR -->
     <a-entity id="ar-target" mindar-image-target="targetIndex: 0">
-      <!-- CONTENITORE PADRE PER IL DIORAMA -->
       <a-entity id="diorama-container"></a-entity>
     </a-entity>
 
@@ -80,22 +81,13 @@
     window.addEventListener("DOMContentLoaded", () => {
       const dioramaContainer = document.querySelector("#diorama-container");
 
-      // ==========================================
-      // GEOMETRIA CORRETTA (Rapporto esatto 15x21 cm -> 21 / 15 = 1.4000)
-      // ==========================================
-      const planeWidth = "1.0";    
-      const planeHeight = "1.4000"; 
-
-      // Profondità della scatola scalata esattamente in proporzione ai 15x21 cm
-      const maxDepth = 0.2333; 
-
       const boxTextures = {
         back: "./images/box_back.png",
         bottom: "./images/box_bottom.png"
       };
 
       // ==========================================
-      // 1. SCATOLA 3D (BACK + BOTTOM)
+      // 1. SCATOLA 3D (BACK + BOTTOM MAGGIORATO A 0.33)
       // ==========================================
       const boxGroup = document.createElement("a-entity");
       boxGroup.setAttribute("id", "diorama-box");
@@ -117,16 +109,16 @@
       };
 
       // Fondo a Z = 0
-      boxGroup.appendChild(createWall(planeWidth, planeHeight, "0 0 0", "0 0 0", boxTextures.back));
+      boxGroup.appendChild(createWall(config.planeWidth, config.planeHeight, "0 0 0", "0 0 0", boxTextures.back));
 
-      // Pavimento calcolato sull'altezza di 1.4000 (Y = -0.7000)
+      // Pavimento riadattato dinamicamente a maxDepth = 0.33
       const overlapZ = -0.005; 
-      const bottomLengthExact = maxDepth - overlapZ; 
+      const bottomLengthExact = config.maxDepth - overlapZ; 
       const bottomCenterZExact = overlapZ + (bottomLengthExact / 2); 
-      const halfHeight = (parseFloat(planeHeight) / 2).toFixed(4); // -0.7000
+      const halfHeight = (config.planeHeight / 2).toFixed(4); // -0.7000
 
       boxGroup.appendChild(createWall(
-        planeWidth, 
+        config.planeWidth, 
         bottomLengthExact, 
         `0 -${halfHeight} ${bottomCenterZExact.toFixed(4)}`, 
         "-90 0 0", 
@@ -136,21 +128,17 @@
       dioramaContainer.appendChild(boxGroup);
 
       // ==========================================
-      // 2. I 3 LAYER Z
+      // 2. I LAYER Z (0.11, 0.22, 0.33)
       // ==========================================
-      const layerPositionsZ = [
-        0.090,  // Layer 01
-        0.130,  // Layer 02
-        0.2333  // Layer 03 (Duomo / Bordo esterno)
-      ];
+      const layerPositionsZ = [0.11, 0.22, 0.33];
 
-      for (let i = 1; i <= 3; i++) {
+      for (let i = 1; i <= config.layers; i++) {
         const layerNumber = String(i).padStart(2, '0');
         const plane = document.createElement("a-plane");
         
         plane.setAttribute("src", `./images/layer${layerNumber}.png`);
-        plane.setAttribute("width", planeWidth);
-        plane.setAttribute("height", planeHeight);
+        plane.setAttribute("width", config.planeWidth);
+        plane.setAttribute("height", config.planeHeight);
         
         const posZ = layerPositionsZ[i - 1];
         plane.setAttribute("position", `0 0 ${posZ.toFixed(4)}`);
@@ -171,11 +159,12 @@
       const fogContainer = document.createElement("a-entity");
       fogContainer.setAttribute("id", "fog-system");
 
+      // Posizioni della nebbia ricalibrate sulla nuova profondità
       const fogLayersConfig = [
-        { texture: "./images/fog_cloud1.png", z: 0.063, y: -0.48, xStart: -0.14, xEnd: 0.14, dur: 3500, scale: `${planeWidth} 0.56 1`, opacity: 0.65 },
-        { texture: "./images/fog_cloud2.png", z: 0.118, y: -0.44, xStart: 0.17, xEnd: -0.11, dur: 4500, scale: "1.13 0.63 1", opacity: 0.55 },
-        { texture: "./images/fog_cloud3.png", z: 0.193, y: -0.38, xStart: -0.07, xEnd: 0.17, dur: 3000, scale: "1.27 0.70 1", opacity: 0.45 },
-        { texture: "./images/fog_cloud1.png", z: 0.279, y: -0.41, xStart: -0.17, xEnd: 0.17, dur: 4200, scale: "1.27 0.77 1", opacity: 0.60 }
+        { texture: "./images/fog_cloud1.png", z: 0.07, y: -0.48, xStart: -0.14, xEnd: 0.14, dur: 3500, scale: `${config.planeWidth} 0.56 1`, opacity: 0.65 },
+        { texture: "./images/fog_cloud2.png", z: 0.16, y: -0.44, xStart: 0.17, xEnd: -0.11, dur: 4500, scale: "1.13 0.63 1", opacity: 0.55 },
+        { texture: "./images/fog_cloud3.png", z: 0.27, y: -0.38, xStart: -0.07, xEnd: 0.17, dur: 3000, scale: "1.27 0.70 1", opacity: 0.45 },
+        { texture: "./images/fog_cloud1.png", z: 0.36, y: -0.41, xStart: -0.17, xEnd: 0.17, dur: 4200, scale: "1.27 0.77 1", opacity: 0.60 }
       ];
 
       fogLayersConfig.forEach((cfg) => {
